@@ -25,6 +25,13 @@ using Microsoft.AspNetCore.Builder;
 // як запустити ASP проєкт
 // # запуск проєкту 
 // dotnet run 
+
+// Запуск у режимі Hot Reloading(якщо ASP бачить якісь зміни одразу пропонує перезавнатжити)
+// dotnet watch run
+
+// відновити пакети, якщо виконуєте перенос на інший пристрій
+// dotnet restore 
+
 namespace p48_lessons_asp
 {
     public class Program

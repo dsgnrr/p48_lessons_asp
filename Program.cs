@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using p48_lessons_asp.data.dto;
 
 // Файл старту, тут запускається сервер
 
@@ -26,6 +27,7 @@ namespace p48_lessons_asp
             var builder = WebApplication.CreateBuilder(args);
             var app = builder.Build();
 
+            #region Lesson1
             /*
             У додатку налаштовується
             - рутінг
@@ -69,23 +71,23 @@ namespace p48_lessons_asp
 
             app.MapGet("/object", () =>
             {
-               return new
-               {
-                  status = 200,
-                  message = "Ok",
-                  data = new
-                  {
-                      username = "Ivan",
-                      accessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-                  } 
-               } ;
+                return new
+                {
+                    status = 200,
+                    message = "Ok",
+                    data = new
+                    {
+                        username = "Ivan",
+                        accessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+                    }
+                };
             });
             // спрацьовує екранування тому HTML нормально не відображається у браузері
             // Щоб спрацювало необхідно передати у заголовках Content-Type
             app.MapGet("/index", () =>
             {
-                
-               return "<h1>This Header1</h1>"; 
+
+                return "<h1>This Header1</h1>";
             });
             /*
             1-й Спосіб вказати тип контенту: Використовуємо клас-хелпер, у якому можна вказати тип контенту.
@@ -94,7 +96,7 @@ namespace p48_lessons_asp
             {
                 var result = "<h1>This Header1</h1>";
 
-                return Results.Content(result, contentType:"text/html", System.Text.Encoding.UTF8);
+                return Results.Content(result, contentType: "text/html", System.Text.Encoding.UTF8);
             });
 
             /*
@@ -104,8 +106,78 @@ namespace p48_lessons_asp
             app.MapGet("/beatyHtml", (HttpContext context) =>
             {
                 context.Response.ContentType = "text/html; charset=utf-8";
-                return "<h1 style=\"color: darkgreen; font-family: sans-serif;\">This Header1</h1>"; 
+                return "<h1 style=\"color: darkgreen; font-family: sans-serif;\">This Header1</h1>";
             });
+            #endregion
+
+
+            // HttpContext
+            app.MapGet("/httpContext",(HttpContext httpContext) =>
+            {
+                var clientIp = httpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
+                System.Console.WriteLine($"Client IP: {clientIp}");
+                System.Console.WriteLine($"User-Agent: {httpContext.Request.Headers["User-Agent"].ToString()}");
+                System.Console.WriteLine($"Http method: {httpContext.Request.Method}");
+
+                foreach(var item in httpContext.Request.Headers)
+                {
+                    System.Console.WriteLine($"Key:[{item.Key}]=>Value:[{item.Value}]");
+                }
+
+                httpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                httpContext.Response.Headers["X-MyHeader"] = "ASP.NET Core 10";
+                return "Ok";
+            });
+
+            /* node js express
+            app.map('/login', (req:Request, res: Response)=>{
+                // щоб отримати детальну інформацію про запит
+                // необхідно вручну діставати всю інформацію
+            })
+            
+            */
+            /*
+            ASP може самостійно перетворити body у об'єкт. 
+            Якщо об'єкт не Nullable він вважається обов'язковим, тобто якщо його не передати ASP автоматично відправить респонс зі статусом 
+            400-BadRequest (Проблема клієнта, означає що запит сформовано не правильно, наприклад неправильний body, чи queryParams)
+            */
+            app.MapPost("/api/users/login", (LoginDto? loginData) =>
+            {
+                if (loginData is null)
+                {
+                    return Results.BadRequest(new
+                    {
+                        Status = 400,
+                        Message = "BadRequest. Username and password required"
+                    });
+                }
+
+                Console.WriteLine($"[POST] /api/users/login Data: username=>{loginData.Username} password=>{loginData.Password}");
+                return Results.Ok(new
+                {
+                    Status = 200,
+                    Message = $"{loginData.Username} successfuly logined",
+                });
+
+            });
+
+            // Як опрацювати queryParams
+            app.MapGet("/api/search", (string query, int page = 1) =>
+            {
+                System.Console.WriteLine($"Query: {query}");
+                // 200 - OK 
+                return Results.Ok(new
+                {
+                    Status = 200,
+                    Message = "Ok",
+                    Data = new
+                    {
+                        Query = query,
+                        PageNumber = page,
+                    }
+                });
+            });
+
 
 
 
