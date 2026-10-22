@@ -10,7 +10,42 @@ namespace p48_lessons_asp
 {
     public class Program
     {
+
         public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
+
+            // Включаємо сервіс, який дозволяє класам(контролерам у які будуть приходити запити) повертати html-верстку
+            builder.Services.AddControllersWithViews();
+
+            var app = builder.Build();
+
+            // Якщо проєкт знаходиться не у режимі розробки то наступні інструкції виконаються
+            if (!app.Environment.IsDevelopment())
+            {   
+
+                // мідлвеєр який перехоплює будь-яку помилку, і у бразуер віддає html-сторінку з описом помилку
+                app.UseExceptionHandler("/Home/Error");
+                // мідлвеєр який забороняє заходити на цей ресурс без https
+                app.UseHsts();
+            }
+            
+            // Для роботи картинок, стилів, скриптів, необхідно підключити цей мідлвеєр
+            app.UseStaticFiles();
+
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.MapControllerRoute(
+                name:"default",
+                pattern:"{controller=Home}/{action=Index}/{id?}"
+            );
+
+            app.Run();
+            
+        }
+        public static void MainOld(string[] args)
         {
             // Main запускає сервер(бекенд)
             /* Для створення додатку, необхідно створити білдер
