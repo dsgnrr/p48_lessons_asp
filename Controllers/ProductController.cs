@@ -18,10 +18,38 @@ namespace p48_lessons_asp.Controllers
             {Guid.Parse("afe51c95-3926-40c8-8fb3-3374c447ade6"),"Clothes"}
         };
 
-        public ActionResult Index()
+        [HttpGet]
+        public IActionResult Index()
         {
             return View(_products);
         }
 
+        [HttpGet]
+        public IActionResult Create()
+        {
+            var viewModel = new CreateProductViewModel
+            {
+                Categories = new(_categories, "Key", "Value")
+            };
+
+            return View(viewModel);
+        }
+        [HttpPost]
+        public IActionResult Create(CreateProductViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                model.Categories = new(_categories, "Key","Value", model.CategoryId);
+                return View(model);
+            }
+
+            _products.Add(new ProductListItemModel
+            {
+                Name = model.Name,
+                Price = model.Price,
+                CategoryName = _categories[model.CategoryId]
+            });
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

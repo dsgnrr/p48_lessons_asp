@@ -24,6 +24,13 @@
         @RenderBody()
     </div>
     <script src="~/js/materialize.min.js"></script>
+    <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var elems = document.querySelectorAll('select');
+                var options = document.querySelectorAll('option');
+                var instances = M.FormSelect.init(elems, options);
+            });
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 
