@@ -35,8 +35,14 @@ namespace p48_lessons_asp.Controllers
             return View(viewModel);
         }
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Create(CreateProductViewModel model)
         {
+
+            /*
+            CSRF-атака(Cross-Site-Request-Forgery) - суть атаки наступна:
+            Користувач залогінився на вашому сайті, для нього сформувався токен, який зберігається у кукі. Є ризик що цим кукі може скористуватися інший ресурс, який може бути шкідливими, цей ресурс, зможе спробувати використати ваш кукі, щоб відправити запит на сайт в якому у вас є авторизація.
+            */
             if (!ModelState.IsValid)
             {
                 model.Categories = new(_categories, "Key","Value", model.CategoryId);
