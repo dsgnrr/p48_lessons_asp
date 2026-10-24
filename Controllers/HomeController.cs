@@ -5,6 +5,12 @@ namespace p48_lessons_asp.Controllers
 {
     public class HomeController : Controller
     {
+
+        public IActionResult UserPage()
+        {
+            return View("Index");
+        }
+
         // action
         public IActionResult Index(int? id)
         {
