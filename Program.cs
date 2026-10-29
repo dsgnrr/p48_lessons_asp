@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using p48_lessons_asp.data.dto;
+using p48_lessons_asp.Services.StorageService;
 
 // Файл старту, тут запускається сервер
 
@@ -17,6 +18,8 @@ namespace p48_lessons_asp
 
             // Включаємо сервіс, який дозволяє класам(контролерам у які будуть приходити запити) повертати html-верстку
             builder.Services.AddControllersWithViews();
+
+            builder.Services.AddSingleton<IStorageService, AzureStorageAccount>();
 
             var app = builder.Build();
 
