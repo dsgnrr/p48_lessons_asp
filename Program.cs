@@ -19,9 +19,16 @@ namespace p48_lessons_asp
             builder.Services.AddControllersWithViews();
 
             #region Services Register
-            builder.Services.AddTransient<TransientOperation>();
-            builder.Services.AddScoped<ScopedOperation>();
-            builder.Services.AddSingleton<SingletonOperation>();
+            // builder.Services.AddTransient<TransientOperation>();
+            // builder.Services.AddScoped<ScopedOperation>();
+            // builder.Services.AddSingleton<SingletonOperation>();
+            
+            /*
+            Може виникнути ситуація що нам знадобляться декілька реалізацій сервісу, щоб обрати конкретну ми додамо ключ, за яки будемо діставати реалізацію під інтерфейс
+            */
+            builder.Services.AddKeyedTransient<IOperation, TransientOperation>("transient");
+            builder.Services.AddKeyedScoped<IOperation, ScopedOperation>("scoped");
+            builder.Services.AddKeyedSingleton<IOperation, SingletonOperation>("singleton");
             #endregion
 
             var app = builder.Build();

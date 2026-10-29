@@ -6,23 +6,23 @@ namespace p48_lessons_asp.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly TransientOperation _transient1;
+        private readonly IOperation _transient1;
 
-        private readonly TransientOperation _transient2;
+        private readonly IOperation _transient2;
 
-        private readonly ScopedOperation _scoped1;
-        private readonly ScopedOperation _scoped2;
+        private readonly IOperation _scoped1;
+        private readonly IOperation _scoped2;
 
-        private readonly SingletonOperation _singleton1;
-        private readonly SingletonOperation _singleton2;
+        private readonly IOperation _singleton1;
+        private readonly IOperation _singleton2;
 
         public HomeController(
-            TransientOperation transient1,
-            TransientOperation transient2,
-            ScopedOperation scoped1,
-            ScopedOperation scoped2,
-            SingletonOperation singleton1,
-            SingletonOperation singleton2
+        [FromKeyedServices("transient")]IOperation transient1,
+        [FromKeyedServices("transient")]IOperation transient2,
+        [FromKeyedServices("scoped")]IOperation scoped1,
+        [FromKeyedServices("scoped")]IOperation scoped2,
+        [FromKeyedServices("singleton")]IOperation singleton1,
+        [FromKeyedServices("singleton")]IOperation singleton2
         )
         {
             _transient1 = transient1;
