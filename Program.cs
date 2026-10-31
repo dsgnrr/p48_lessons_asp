@@ -1,5 +1,7 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Builder;
+using p48_lessons_asp.Models;
+using p48_lessons_asp.Services.Generator;
 
 namespace p48_lessons_asp
 {
@@ -10,6 +12,7 @@ namespace p48_lessons_asp
         {
             var builder = WebApplication.CreateBuilder(args);
             
+            builder.Services.AddSingleton<IGenerator<Product>, ProductGenerator>();
             // Додаємо сервіс, який буде перенаправляти запити на контролери
             builder.Services.AddControllers();
             // сервіс який збирає метадані про всі ендпоінти(маршрути) у додатку
