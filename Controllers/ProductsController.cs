@@ -21,8 +21,9 @@ namespace p48_lessons_asp.Controllers
         }
 
         [HttpGet]
-        public IActionResult Products()
+        public IActionResult Products([FromQuery] GetProductQueryModel? model)
         {
+            System.Console.WriteLine(model);
             return Ok(new
             {
                 Status = 200,
@@ -79,11 +80,35 @@ namespace p48_lessons_asp.Controllers
             });
         }
         // POST: api/products/
+
+        // [FromBody] Only Json body
+        // [FromForm] Використовується для форм з html, + надає можливість отримувати файли від користувача
+        
+        // public IActionResult CreateProducts([FromBody] CreateProductModel? model)
         [HttpPost]
-        public IActionResult CreateProducts([FromBody]CreateProductModel model)
+        public async Task<IActionResult> CreateProducts([FromForm] CreateProductModel? model)
         {
+            if (model is null)
+            {
+                // return BadRequest();
+                return new ObjectResult(new { message = "Product body is required" }) { StatusCode = StatusCodes.Status400BadRequest };
+            }
+            if (model.productImage != null)
+            {
+                var file = model.productImage;
+                System.Console.WriteLine("File name: {0}", file.FileName);
+                // System.Console.WriteLine("Content: {0}", file.ToString());
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                using(var stream = file.OpenReadStream())
+                using(var reader = new StreamReader(stream))
+                {
+                    string content = reader.ReadToEnd();
+                    System.Console.WriteLine(content);
+                }
+                Console.ResetColor();
+            }
             System.Console.WriteLine(model.Product);
-            return Ok();
+            return new ObjectResult(new { status = 201, message = "Created", data = model.Product }) { StatusCode = StatusCodes.Status201Created };
         }
     }
 }

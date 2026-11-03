@@ -1,5 +1,7 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
+using p48_lessons_asp.Data;
 using p48_lessons_asp.Models;
 using p48_lessons_asp.Services.Generator;
 
@@ -38,6 +40,21 @@ namespace p48_lessons_asp
                 c.EnableAnnotations();
             });
 
+            var connectionString = builder.Configuration.GetConnectionString("MSSqlConnection");
+            if(connectionString == null)
+            {
+                throw new Exception("No connection string. Please provide in appsettings.json");
+            }
+            try
+            {
+                builder.Services.AddDbContext<DataContext>(
+                    options=>options.UseSqlServer(connectionString)
+                );
+            }
+            catch(Exception ex)
+            {
+                throw new Exception("Getting error while trying to connect to database");
+            }
             var app = builder.Build();
 
             if (app.Environment.IsDevelopment())
