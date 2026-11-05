@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using p48_lessons_asp.Data;
 using p48_lessons_asp.Models;
 using p48_lessons_asp.Services.Generator;
 
@@ -10,7 +11,92 @@ namespace p48_lessons_asp.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
+        private readonly DataContext _dataContext;
 
+        public ProductsController(DataContext dataContext)
+        {
+            _dataContext = dataContext;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateProduct([FromBody] CreateProductModel? model)
+        {
+            // TODO: Validation Logic
+            Dictionary<string, string> validationResult = new();
+            if (model == null)
+            {
+                return new ObjectResult(
+                    new ResponseModel<object>
+                    {
+                        StatusCode = StatusCodes.Status400BadRequest,
+                        Message = "Product data is required"
+                    })
+                {
+                    StatusCode = StatusCodes.Status400BadRequest
+                };
+            }
+            if (model.Name.Trim().Length == 0)
+            {
+                validationResult["nameError"] = "Product name is required";
+            }
+
+            if (model.Price <= 0)
+            {
+                validationResult["priceError"] = "Product price must be over zero";
+            }
+            if (validationResult.Count != 0)
+            {
+                return new ObjectResult(
+                   new ResponseModel<object>
+                   {
+                       StatusCode = StatusCodes.Status400BadRequest,
+                       Message = "Product data is required",
+                       Data = validationResult
+                   })
+                {
+                    StatusCode = StatusCodes.Status400BadRequest
+                };
+            }
+            try
+            {
+                // TODO: Repository Code
+                var newProduct = new Data.Entity.Product
+                {
+                    Name = model.Name,
+                    Price = model.Price,
+                    Description = model.Description
+                };
+                _dataContext.Products.Add(newProduct);
+                await _dataContext.SaveChangesAsync();
+                return new ObjectResult(new ResponseModel<Data.Entity.Product>
+                {
+                    StatusCode = StatusCodes.Status201Created,
+                    Message = "Product successfuly created",
+                    Data = newProduct
+                });
+            }
+            catch (OperationCanceledException ex)
+            {
+                // TODO: Logger
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                System.Console.WriteLine($"[CRITICAL] Cannot create new product with reason: {ex.Message} | ${DateTime.Now} | ProductsController/CreateProduct");
+                Console.ResetColor();
+                
+
+                return new ObjectResult(
+                   new ResponseModel<object>
+                   {
+                       StatusCode = StatusCodes.Status500InternalServerError,
+                       Message = "Cannot create product. See server logs",
+                   })
+                {
+                    StatusCode = StatusCodes.Status400BadRequest
+                };
+            }
+        }
+
+        #region Old_example_without_db 
+        /*
         private readonly IGenerator<Product> _generator;
         private readonly List<Product> products;
         public ProductsController(IGenerator<Product> generator)
@@ -110,5 +196,9 @@ namespace p48_lessons_asp.Controllers
             System.Console.WriteLine(model.Product);
             return new ObjectResult(new { status = 201, message = "Created", data = model.Product }) { StatusCode = StatusCodes.Status201Created };
         }
+
+        */
+        #endregion
     }
+
 }
