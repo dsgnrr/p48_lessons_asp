@@ -1,8 +1,7 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using p48_lessons_asp.Data;
 using p48_lessons_asp.Models;
-using p48_lessons_asp.Services.Generator;
 
 namespace p48_lessons_asp.Controllers
 {
@@ -16,6 +15,54 @@ namespace p48_lessons_asp.Controllers
         public ProductsController(DataContext dataContext)
         {
             _dataContext = dataContext;
+        }
+        
+        [HttpGet]
+        public async Task<IActionResult> GetProducts()
+        {
+            try
+            {
+                var products = await _dataContext.Products.ToListAsync();
+                if(products == null || products.Count == 0)
+                {
+                    return new ObjectResult(
+                        new ResponseModel<object>
+                        {
+                            StatusCode = 404,
+                            Message = "Products not found",
+                        }
+                    )
+                    {
+                        StatusCode = 404
+                    };
+                }
+                return new ObjectResult(
+                    new ResponseModel<List<Data.Entity.Product>>
+                    {
+                        StatusCode = 200,
+                        Message = "Ok",
+                        Data = products
+                    }
+                ){StatusCode = 200};
+            }
+            catch (OperationCanceledException ex)
+            {
+                // TODO: Logger
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                System.Console.WriteLine($"[CRITICAL] Cannot create new product with reason: {ex.Message} | ${DateTime.Now} | ProductsController/CreateProduct");
+                Console.ResetColor();
+                
+
+                return new ObjectResult(
+                   new ResponseModel<object>
+                   {
+                       StatusCode = StatusCodes.Status500InternalServerError,
+                       Message = "Cannot create product. See server logs",
+                   })
+                {
+                    StatusCode = StatusCodes.Status400BadRequest
+                };
+            }
         }
 
         [HttpPost]
