@@ -51,7 +51,7 @@ namespace p48_lessons_asp
                     options=>options.UseSqlServer(connectionString)
                 );
             }
-            catch(Exception ex)
+            catch(Exception)
             {
                 throw new Exception("Getting error while trying to connect to database");
             }
