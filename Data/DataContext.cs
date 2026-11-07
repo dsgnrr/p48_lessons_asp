@@ -13,6 +13,9 @@ public class DataContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Product>()
-            .ToTable(t => t.HasCheckConstraint("CK_Product_Price_Positive", "Price > 0"));
+            .ToTable(t => t.HasCheckConstraint("CK_Product_Price_Positive", "Price >= 0"));
+        modelBuilder.Entity<Product>()
+            .Property(p=>p.Price)
+            .HasPrecision(18,2);
     }
 }
