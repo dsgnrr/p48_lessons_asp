@@ -15,7 +15,13 @@ public class DataContext : DbContext
         modelBuilder.Entity<Product>()
             .ToTable(t => t.HasCheckConstraint("CK_Product_Price_Positive", "Price >= 0"));
         modelBuilder.Entity<Product>()
-            .Property(p=>p.Price)
-            .HasPrecision(18,2);
+            .Property(p => p.Price)
+            .HasPrecision(18, 2);
+        modelBuilder.Entity<Product>()
+           .HasIndex(p => p.Slug)
+           .IsUnique();
+        modelBuilder.Entity<Category>()
+        .HasIndex(c => c.Slug)
+        .IsUnique();
     }
 }

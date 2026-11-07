@@ -68,6 +68,7 @@ namespace p48_lessons_asp.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateProduct([FromBody] CreateProductModel? model)
         {
+            return NotFound();
             // TODO: Validation Logic
             Dictionary<string, string> validationResult = new();
             if (model == null)

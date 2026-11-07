@@ -1,8 +1,13 @@
+using System.Globalization;
 using System.Reflection;
+using FluentValidation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using p48_lessons_asp.Data;
 using p48_lessons_asp.Models;
+using p48_lessons_asp.Services.Random;
+using p48_lessons_asp.Services.Slug;
+using Slugify;
 
 namespace p48_lessons_asp
 {
@@ -12,7 +17,11 @@ namespace p48_lessons_asp
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            
+            ValidatorOptions.Global.LanguageManager.Culture = new CultureInfo("en");
+            builder.Services.AddSingleton<IRandomService, RandomService>();
+            builder.Services.AddSingleton<ISlugHelper, SlugHelper>();
+            builder.Services.AddSingleton<ISlugService, SlugService>();
+            builder.Services.AddValidatorsFromAssemblyContaining<Program>();
             // builder.Services.AddSingleton<IGenerator<Product>, ProductGenerator>();
             // Додаємо сервіс, який буде перенаправляти запити на контролери
             builder.Services.AddControllers();
