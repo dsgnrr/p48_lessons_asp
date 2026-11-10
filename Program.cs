@@ -21,6 +21,9 @@ namespace p48_lessons_asp
             builder.Services.AddSingleton<IRandomService, RandomService>();
             builder.Services.AddSingleton<ISlugHelper, SlugHelper>();
             builder.Services.AddSingleton<ISlugService, SlugService>();
+
+            builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
             builder.Services.AddValidatorsFromAssemblyContaining<Program>();
             // builder.Services.AddSingleton<IGenerator<Product>, ProductGenerator>();
             // Додаємо сервіс, який буде перенаправляти запити на контролери
