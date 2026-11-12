@@ -25,7 +25,7 @@ public class CreateProductValidator : AbstractValidator<CreateProductModel>
         .MustAsync(async (categoryId, token) =>
         {
             var category = await _dataContext.Categories.FirstOrDefaultAsync(c => c.Id == categoryId);
-            return category == null;
+            return category != null;
         }).WithMessage("Category not found");
 
         RuleFor(x => x.Name).NotEmpty().WithMessage("Name is required")

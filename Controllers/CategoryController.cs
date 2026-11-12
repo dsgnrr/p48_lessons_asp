@@ -51,6 +51,8 @@ namespace p48_lessons_asp.Controllers
                 var categories = await _dataContext
                 .Categories
                 .Where(c => c.DeletedAt == null)
+                // підванатажуємо продукти, самостійно пов'язані сутності EF не підтягує
+                .Include(c=>c.Products)
                 .ProjectTo<CategoryDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
