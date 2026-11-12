@@ -2,7 +2,7 @@ using System;
 
 namespace p48_lessons_asp.Models;
 
-public class CreateProductModel
+public class CreateProductRequest
 {
     public string Name { get; set; } = string.Empty;
     public decimal Price { get; set; }

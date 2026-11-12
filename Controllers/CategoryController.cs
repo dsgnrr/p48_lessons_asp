@@ -1,8 +1,12 @@
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using p48_lessons_asp.Data;
 using p48_lessons_asp.Data.Entity;
+using p48_lessons_asp.DTO.Category;
 using p48_lessons_asp.Models.CategoryRequestModels;
 using p48_lessons_asp.Services.FluentValidation;
 using p48_lessons_asp.Services.Slug;
@@ -15,8 +19,10 @@ namespace p48_lessons_asp.Controllers
     {
         private readonly ISlugService _slugService;
         private readonly DataContext _dataContext;
+        private readonly IMapper _mapper;
         IValidator<CreateCategoryModel> _createCategoryValidator;
         public CategoryController(
+            IMapper mapper,
             ISlugService slugService,
             DataContext dataContext,
             IValidator<CreateCategoryModel> createCategoryValidator
@@ -25,6 +31,59 @@ namespace p48_lessons_asp.Controllers
             _slugService = slugService;
             _dataContext = dataContext;
             _createCategoryValidator = createCategoryValidator;
+            _mapper = mapper;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCategories()
+        {
+            try
+            {
+                // var categories = await _dataContext.Categories.Where(c => c.DeletedAt == null).Select(c => new
+                // {
+                //     c.Id,
+                //     ParentCategory = c.ParentCategoryId,
+                //     Slug = c.Slug,
+                //     Title = c.Title,
+                //     Description = c.Description
+                // }).ToListAsync();
+                // var categories = await _dataContext.Categories.Where(c => c.DeletedAt == null).Select(c => new CategoryDto()).ToListAsync();
+                var categories = await _dataContext
+                .Categories
+                .Where(c => c.DeletedAt == null)
+                .ProjectTo<CategoryDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+                if (categories == null || categories.Count == 0)
+                {
+                    return new ObjectResult(new
+                    {
+                        StatusCode = 404,
+                        Message = "Categories not found",
+                        Data = (object)null!
+                    })
+                    { StatusCode = 404 };
+                }
+                return new ObjectResult(new
+                {
+                    StatusCode = 200,
+                    Message = "Ok",
+                    Count = categories.Count,
+                    Data = categories
+                })
+                { StatusCode = 200 };
+            }
+            catch (OperationCanceledException ex)
+            {
+                System.Console.WriteLine("Database error: {0}", ex.Message);
+                return new ObjectResult(new
+                {
+                    StatusCode = 503,
+                    Message = "Service Unavailable",
+                    Data = (object)null!
+                })
+                { StatusCode = 503 };
+            }
         }
 
         [HttpPost]
@@ -36,14 +95,14 @@ namespace p48_lessons_asp.Controllers
             {
                 return new ObjectResult(validations) { StatusCode = 400 };
             }
-            
+
             Category category = new()
             {
                 Title = model.Title,
                 Slug = _slugService.GetSlug(model.Title),
                 Description = model.Description
             };
-            if(Guid.TryParse(model.ParentCategoryId, out var parsed)) category.ParentCategoryId = parsed;
+            if (Guid.TryParse(model.ParentCategoryId, out var parsed)) category.ParentCategoryId = parsed;
             try
             {
                 await _dataContext.Categories.AddAsync(category);

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using p48_lessons_asp.Data;
 using p48_lessons_asp.Models;
+using p48_lessons_asp.Models.ProductRequestModels;
 
 namespace p48_lessons_asp.Controllers
 {
@@ -65,10 +66,18 @@ namespace p48_lessons_asp.Controllers
             }
         }
 
+
         [HttpPost]
-        public async Task<IActionResult> CreateProduct([FromBody] CreateProductModel? model)
+        public async Task<IActionResult> GetNewProduct([FromBody] CreateProductModel model)
         {
-            return NotFound();
+            return Ok();
+        }
+        
+        [HttpPost]
+        [Route("create")]
+        public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequest? model)
+        {
+            return BadRequest();
             // TODO: Validation Logic
             Dictionary<string, string> validationResult = new();
             if (model == null)
