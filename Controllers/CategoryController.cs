@@ -17,6 +17,7 @@ namespace p48_lessons_asp.Controllers
     [ApiController]
     public class CategoryController : ControllerBase
     {
+        
         private readonly ISlugService _slugService;
         private readonly DataContext _dataContext;
         private readonly IMapper _mapper;
