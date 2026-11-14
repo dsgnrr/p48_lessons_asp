@@ -79,7 +79,7 @@ namespace p48_lessons_asp.Controllers
             }
             catch (OperationCanceledException ex)
             {
-                System.Console.WriteLine("Database error: {0}", ex.Message);
+                _logger.LogError(ex,"Database error");
                 return new ObjectResult(new
                 {
                     StatusCode = 503,
