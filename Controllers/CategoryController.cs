@@ -17,7 +17,7 @@ namespace p48_lessons_asp.Controllers
     [ApiController]
     public class CategoryController : ControllerBase
     {
-        
+        private readonly ILogger<CategoryController> _logger;
         private readonly ISlugService _slugService;
         private readonly DataContext _dataContext;
         private readonly IMapper _mapper;
@@ -26,13 +26,14 @@ namespace p48_lessons_asp.Controllers
             IMapper mapper,
             ISlugService slugService,
             DataContext dataContext,
-            IValidator<CreateCategoryModel> createCategoryValidator
-            )
+            IValidator<CreateCategoryModel> createCategoryValidator,
+            ILogger<CategoryController> logger)
         {
             _slugService = slugService;
             _dataContext = dataContext;
             _createCategoryValidator = createCategoryValidator;
             _mapper = mapper;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -92,10 +93,12 @@ namespace p48_lessons_asp.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryModel model)
         {
+
             var validations = await _createCategoryValidator.GetErrorsAsync(model);
 
             if (validations != null)
             {
+                _logger.LogWarning("User failed validation while create new category");
                 return new ObjectResult(validations) { StatusCode = 400 };
             }
 
@@ -110,6 +113,7 @@ namespace p48_lessons_asp.Controllers
             {
                 await _dataContext.Categories.AddAsync(category);
                 await _dataContext.SaveChangesAsync();
+                _logger.LogInformation("Succesfully create new category: {id}", category.Id);
                 return new ObjectResult(new
                 {
                     StatusCdoe = 201,
@@ -119,7 +123,8 @@ namespace p48_lessons_asp.Controllers
             }
             catch (OperationCanceledException ex)
             {
-                System.Console.WriteLine($"Created category error: {ex.Message}");
+                // System.Console.WriteLine($"Created category error: {ex.Message}");
+                _logger.LogWarning("Failed create new category by reason: {reason}", ex.Message);
                 return new ObjectResult(new
                 {
                     StatusCode = 500,

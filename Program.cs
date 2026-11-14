@@ -8,6 +8,7 @@ using p48_lessons_asp.Models;
 using p48_lessons_asp.Services.Random;
 using p48_lessons_asp.Services.Slug;
 using Slugify;
+using Serilog;
 
 namespace p48_lessons_asp
 {
@@ -16,6 +17,10 @@ namespace p48_lessons_asp
 
         public static void Main(string[] args)
         {
+            var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json")
+            .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true).Build();
             var builder = WebApplication.CreateBuilder(args);
             ValidatorOptions.Global.LanguageManager.Culture = new CultureInfo("en");
             builder.Services.AddSingleton<IRandomService, RandomService>();
