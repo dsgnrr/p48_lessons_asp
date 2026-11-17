@@ -14,5 +14,6 @@ public class MappingProfile : Profile
             opt.MapFrom(src => src.Products != null ? src.Products.Count() : 0));
 
         CreateMap<Data.Entity.Product, ProductDto>();
+        CreateMap<Data.Entity.ProductImage, ProductImageDto>();
     }
 }

@@ -9,6 +9,7 @@ using p48_lessons_asp.Models;
 using p48_lessons_asp.Models.ProductRequestModels;
 using p48_lessons_asp.Services.FluentValidation;
 using p48_lessons_asp.Services.Slug;
+using p48_lessons_asp.Services.StorageService;
 
 namespace p48_lessons_asp.Controllers
 {
@@ -19,15 +20,19 @@ namespace p48_lessons_asp.Controllers
     {
         private readonly DataContext _dataContext;
         private readonly IValidator<CreateProductModel> _validator;
+        private readonly IValidator<CreateProductImageRequest> _imageValidator;
         private readonly ISlugService _slugService;
+        private readonly IStorageService _storageService;
         private readonly IMapper _mapper;
 
-        public ProductsController(DataContext dataContext, IValidator<CreateProductModel> validator, ISlugService slugService, IMapper mapper)
+        public ProductsController(DataContext dataContext, IValidator<CreateProductModel> validator, ISlugService slugService, IMapper mapper, IValidator<CreateProductImageRequest> imageValidator, IStorageService storageService)
         {
             _dataContext = dataContext;
             _validator = validator;
             _slugService = slugService;
             _mapper = mapper;
+            _imageValidator = imageValidator;
+            _storageService = storageService;
         }
 
         [HttpGet]
@@ -78,7 +83,50 @@ namespace p48_lessons_asp.Controllers
             }
         }
 
-        
+        [HttpPost]
+        [Route("product-image")]
+        public async Task<IActionResult> CreateProductImage([FromForm]CreateProductImageRequest model)
+        {
+            var validationResult = _imageValidator.GetErrors(model);
+            if (validationResult != null)
+            {
+                return new ObjectResult(validationResult) { StatusCode = 400 };
+            }
+            var product = await _dataContext.Products.FirstOrDefaultAsync(p=>p.Id == model.ProductId);
+            if(product == null)
+            {
+                return new ObjectResult(new
+                {
+                    StatusCode=404,
+                    Message="Product not found"
+                }) { StatusCode = 404 };
+            }
+            // todo: transactions
+
+            var imageUrl = await _storageService.SaveFileAsync(nameof(Product), product.Name, model.Image);
+            if (string.IsNullOrEmpty(imageUrl))
+            {
+                return new ObjectResult(new
+                {
+                    StatusCode=503,
+                    Message="Product image not added"
+                }) { StatusCode = 503 };
+            }
+            var productImage = new Data.Entity.ProductImage
+            {
+                Url = imageUrl,
+                ProductId = product.Id,
+                Order = 0
+            };
+            await _dataContext.ProductImages.AddAsync(productImage);
+            await _dataContext.SaveChangesAsync();
+            return new ObjectResult(new
+            {
+                StatusCode = 201,
+                Message = "Created",
+                Data = _mapper.Map<ProductImageDto>(productImage)
+            }){StatusCode = 201};
+        }
 
         [HttpPost]
         public async Task<IActionResult> GetNewProduct([FromBody] CreateProductModel model)
