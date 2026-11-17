@@ -31,7 +31,7 @@ namespace p48_lessons_asp
                 Log.Information("Running web-application");
                 var builder = WebApplication.CreateBuilder(args);
                 ValidatorOptions.Global.LanguageManager.Culture = new CultureInfo("en");
-                
+
                 // підключення логера замість стандартного
                 builder.Host.UseSerilog();
                 builder.Services.AddSingleton<IRandomService, RandomService>();
@@ -62,8 +62,10 @@ namespace p48_lessons_asp
                     });
                     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
-
-                    c.IncludeXmlComments(xmlPath);
+                    if (File.Exists(xmlPath))
+                    {
+                        c.IncludeXmlComments(xmlPath);
+                    }
                     c.EnableAnnotations();
                 });
 
@@ -84,6 +86,7 @@ namespace p48_lessons_asp
                 }
                 var app = builder.Build();
 
+
                 // Мідлвеєр який логує запити
                 app.UseSerilogRequestLogging();
                 if (app.Environment.IsDevelopment())
@@ -94,6 +97,7 @@ namespace p48_lessons_asp
                     app.UseSwaggerUI();
                 }
 
+                app.UseStaticFiles();
                 app.UseAuthorization();
 
                 // Зв'язує класи контролери з маршрутами
@@ -102,8 +106,9 @@ namespace p48_lessons_asp
                 app.Run();
 
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not HostAbortedException)
             {
+                Console.WriteLine($"REAL ERROR: {ex.InnerException?.Message ?? ex.Message}");
                 Log.Fatal(ex, "Application stopped with fatal error");
             }
             finally

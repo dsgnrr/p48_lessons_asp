@@ -13,4 +13,5 @@ public class Product
     
     // navigation properties
     public Category? Category {get;set;}
+    public List<ProductImage>? ProductImages{get;set;}
 }

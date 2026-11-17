@@ -101,6 +101,32 @@ namespace p48_lessons_asp.Migrations
                         });
                 });
 
+            modelBuilder.Entity("p48_lessons_asp.Data.Entity.ProductImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductImages");
+                });
+
             modelBuilder.Entity("p48_lessons_asp.Data.Entity.Category", b =>
                 {
                     b.HasOne("p48_lessons_asp.Data.Entity.Category", "ParentCategory")
@@ -121,11 +147,27 @@ namespace p48_lessons_asp.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("p48_lessons_asp.Data.Entity.ProductImage", b =>
+                {
+                    b.HasOne("p48_lessons_asp.Data.Entity.Product", "Product")
+                        .WithMany("ProductImages")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("p48_lessons_asp.Data.Entity.Category", b =>
                 {
                     b.Navigation("ChildCategories");
 
                     b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("p48_lessons_asp.Data.Entity.Product", b =>
+                {
+                    b.Navigation("ProductImages");
                 });
 #pragma warning restore 612, 618
         }
