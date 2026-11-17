@@ -78,6 +78,7 @@ namespace p48_lessons_asp.Controllers
             }
         }
 
+        
 
         [HttpPost]
         public async Task<IActionResult> GetNewProduct([FromBody] CreateProductModel model)

@@ -14,22 +14,44 @@ public class ServerFileStorageService : IStorageService
         _slugService = slugService;
     }
 
-    public Task<bool> DeleteFileAsync(string url)
+    public async Task<bool> DeleteFileAsync(string url)
     {
         throw new NotImplementedException();
     }
 
-    public Task<string> SaveFileAsync(string entityType, string entityName, IFormFile file, string fileName = null)
+    public async Task<string> SaveFileAsync(string entityType, string entityName, IFormFile file, string fileName = null)
     {
-        if(file == null || file.Length == 0)
+        try
         {
-            throw new ArgumentException("File is not send");
+            if (file == null || file.Length == 0)
+            {
+                throw new ArgumentException("File is not send or empty");
+            }
+            var slugEntityType = _slugService.GetSlug(entityType); // Product, Category, User
+            var slugEntityName = _slugService.GetSlug(entityName); // productName, categoryname
+
+            var uploadFolderPath = Path.Combine(_env.WebRootPath, "images", slugEntityType, slugEntityName);
+
+            if (!Directory.Exists(uploadFolderPath)) Directory.CreateDirectory(uploadFolderPath);
+
+            var extension = Path.GetExtension(file.FileName);
+            string resultFileName;
+
+            if (!string.IsNullOrEmpty(fileName)) resultFileName = $"{fileName}{extension}";
+            else resultFileName = $"{Guid.NewGuid()}{extension}";
+
+            var filePath = Path.Combine(uploadFolderPath, resultFileName);
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            return $"/images/{slugEntityType}/{slugEntityName}/{resultFileName}";
         }
-        var slugEntityType = _slugService.GetSlug(entityType); // Product, Category, User
-        var slugEntityName = _slugService.GetSlug(entityName); // productName, categoryname
-
-        var uploadFolderPath = Path.Combine(_env.WebRootPath, "images", slugEntityType, slugEntityName);
-
-        if(!Directory.Exists(uploadFolderPath)) Directory.CreateDirectory(uploadFolderPath);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error while try to save file");
+            throw new Exception($"Error while try to save file: {ex.Message}", ex);
+        }
     }
 }
