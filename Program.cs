@@ -9,6 +9,7 @@ using p48_lessons_asp.Services.Random;
 using p48_lessons_asp.Services.Slug;
 using Slugify;
 using Serilog;
+using p48_lessons_asp.Services.StorageService;
 
 namespace p48_lessons_asp
 {
@@ -37,6 +38,7 @@ namespace p48_lessons_asp
                 builder.Services.AddSingleton<IRandomService, RandomService>();
                 builder.Services.AddSingleton<ISlugHelper, SlugHelper>();
                 builder.Services.AddSingleton<ISlugService, SlugService>();
+                builder.Services.AddSingleton<IStorageService, ServerFileStorageService>();
 
                 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
