@@ -2,6 +2,11 @@ using System;
 
 namespace p48_lessons_asp.Data.Entity;
 
+// Об'єкт токену.
+/*
+Яка мета збереження? 
+
+*/
 public class JwtToken
 {
     public Guid Id{get;set;}
