@@ -58,6 +58,24 @@ namespace p48_lessons_asp.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("p48_lessons_asp.Data.Entity.JwtToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ExpirationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Tokens");
+                });
+
             modelBuilder.Entity("p48_lessons_asp.Data.Entity.Product", b =>
                 {
                     b.Property<Guid>("Id")
@@ -127,6 +145,77 @@ namespace p48_lessons_asp.Migrations
                     b.ToTable("ProductImages");
                 });
 
+            modelBuilder.Entity("p48_lessons_asp.Data.Entity.TokenJournal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ActivatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeactivatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("TokenId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TokenJournals");
+                });
+
+            modelBuilder.Entity("p48_lessons_asp.Data.Entity.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("BirthdayDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FirstName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LaststName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Login")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PasswordSalt")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<short>("Role")
+                        .HasColumnType("smallint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Login")
+                        .IsUnique();
+
+                    b.ToTable("Users");
+                });
+
             modelBuilder.Entity("p48_lessons_asp.Data.Entity.Category", b =>
                 {
                     b.HasOne("p48_lessons_asp.Data.Entity.Category", "ParentCategory")
@@ -158,6 +247,25 @@ namespace p48_lessons_asp.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("p48_lessons_asp.Data.Entity.TokenJournal", b =>
+                {
+                    b.HasOne("p48_lessons_asp.Data.Entity.JwtToken", "Token")
+                        .WithMany("TokenJournals")
+                        .HasForeignKey("TokenId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("p48_lessons_asp.Data.Entity.User", "User")
+                        .WithMany("TokenJournals")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Token");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("p48_lessons_asp.Data.Entity.Category", b =>
                 {
                     b.Navigation("ChildCategories");
@@ -165,9 +273,19 @@ namespace p48_lessons_asp.Migrations
                     b.Navigation("Products");
                 });
 
+            modelBuilder.Entity("p48_lessons_asp.Data.Entity.JwtToken", b =>
+                {
+                    b.Navigation("TokenJournals");
+                });
+
             modelBuilder.Entity("p48_lessons_asp.Data.Entity.Product", b =>
                 {
                     b.Navigation("ProductImages");
+                });
+
+            modelBuilder.Entity("p48_lessons_asp.Data.Entity.User", b =>
+                {
+                    b.Navigation("TokenJournals");
                 });
 #pragma warning restore 612, 618
         }

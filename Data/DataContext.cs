@@ -12,6 +12,9 @@ public class DataContext : DbContext
     public DbSet<Category> Categories { get; set; }
     public DbSet<ProductImage> ProductImages { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<JwtToken> Tokens{get;set;}
+    public DbSet<TokenJournal> TokenJournals{get;set;}
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Product>()

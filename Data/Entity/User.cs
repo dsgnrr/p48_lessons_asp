@@ -15,4 +15,6 @@ public class User
     public UserRole Role{get;set;} = UserRole.Default;
     public DateTime CreatedAt{get;set;} = DateTime.UtcNow;
     public DateTime? DeletedAt{get;set;} = DateTime.UtcNow;
+
+    public List<TokenJournal>? TokenJournals{get;set;}
 }
