@@ -93,16 +93,21 @@ namespace p48_lessons_asp
                     c.EnableAnnotations();
                 });
 
-                var connectionString = builder.Configuration.GetConnectionString("MSSqlConnection");
+                // var connectionString = builder.Configuration.GetConnectionString("MSSqlConnection");
+                var connectionString = builder.Configuration.GetConnectionString("SQLiteConnection");
                 if (connectionString == null)
                 {
                     throw new Exception("No connection string. Please provide in appsettings.json");
                 }
                 try
                 {
-                    builder.Services.AddDbContext<DataContext>(
-                        options => options.UseSqlServer(connectionString)
-                    );
+                    // Прибираю MSSQL для роботи з SQLite, залишу тут, можна буде потім включити
+                    // Якщо ви змінюєте провайдера бази даних наприклад MSSQL на MySQL чи будь який інший, міграціїї потрібно створювати знову
+                    // builder.Services.AddDbContext<DataContext>(
+                    //     options => options.UseSqlServer(connectionString)
+                    // );
+                    builder.Services.AddDbContext<DataContext>(options =>
+                        options.UseSqlite(builder.Configuration.GetConnectionString("SqliteConnection")));
                 }
                 catch (Exception ex)
                 {
