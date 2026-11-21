@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using AutoMapper;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using p48_lessons_asp.Data;
 using p48_lessons_asp.DTO.User;
@@ -28,6 +30,13 @@ namespace p48_lessons_asp.Controllers
             _kdfService = kdfService;
             _logger = logger;
             _mapper = mapper;
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("profile")]
+        public async Task<IActionResult> GetCurrentProfile()
+        {
+            return Ok(HttpContext.User.GetUserId() + " Role: "+ HttpContext.User.GetUserRole());
         }
 
         [HttpPost]

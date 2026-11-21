@@ -21,6 +21,8 @@ using System.IdentityModel.Tokens.Jwt;
 using p48_lessons_asp.Options;
 using p48_lessons_asp.Data.Enum;
 using System.Security.Claims;
+using Microsoft.OpenApi;
+
 
 namespace p48_lessons_asp
 {
@@ -91,6 +93,21 @@ namespace p48_lessons_asp
                         c.IncludeXmlComments(xmlPath);
                     }
                     c.EnableAnnotations();
+
+                    c.AddSecurityDefinition("Bearer" , new OpenApiSecurityScheme
+                    {
+                        Name="Authorization",
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "Bearer",
+                        BearerFormat = "JWT",
+                        In = ParameterLocation.Header,
+                        Description = "Enter JWT-token(Do not use prefix Bearer)"
+                    });
+
+                    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+                    {
+                        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+                    });
                 });
 
                 // var connectionString = builder.Configuration.GetConnectionString("MSSqlConnection");
