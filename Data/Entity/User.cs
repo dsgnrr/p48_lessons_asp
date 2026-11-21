@@ -14,7 +14,7 @@ public class User
     public string PasswordSalt{get;set;} = string.Empty;
     public UserRole Role{get;set;} = UserRole.Default;
     public DateTime CreatedAt{get;set;} = DateTime.UtcNow;
-    public DateTime? DeletedAt{get;set;} = DateTime.UtcNow;
+    public DateTime? DeletedAt{get;set;}
 
     public List<TokenJournal>? TokenJournals{get;set;}
 }

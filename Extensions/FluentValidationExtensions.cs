@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace p48_lessons_asp.Services.FluentValidation;
+namespace p48_lessons_asp.Extensions;
 
 public static class FluentValidationExtensions
 {
@@ -15,7 +15,7 @@ public static class FluentValidationExtensions
                 errorMessage=e.ErrorMessage
             }).ToList<object>();
         }
-        return null;
+        return null!;
     }
     public static async Task<List<object>> GetErrorsAsync<T>(this IValidator<T> validator, T instance)
     {
@@ -28,6 +28,6 @@ public static class FluentValidationExtensions
                 errorMessage=e.ErrorMessage
             }).ToList<object>();
         }
-        return null;
+        return null!;
     }
 }

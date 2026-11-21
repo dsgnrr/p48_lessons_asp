@@ -1,76 +1,145 @@
-using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+
+using p48_lessons_asp.Data;
+using p48_lessons_asp.Data.Entity;
+using p48_lessons_asp.Data.Enum;
+using p48_lessons_asp.Options;
 
 namespace p48_lessons_asp.Services.Token;
 
 public class JwtTokenService : ITokenService
 {
-    private readonly IConfiguration _configuration;
+    private readonly JwtOptions _jwtOptions;
+    private readonly DataContext _dataContext;
 
-    public JwtTokenService(IConfiguration configuration)
+    public JwtTokenService(IOptions<JwtOptions> options, DataContext dataContext)
     {
-        _configuration = configuration;
+        _jwtOptions = options.Value;
+        _dataContext = dataContext;
+    }
+    public async Task<TokenPair> CreateSessionAsync(User user)
+    {
+        var accessExpires = DateTime.UtcNow.AddMinutes(_jwtOptions.AccessTokenExpirationMinutes);
+        var refreshExpires = DateTime.UtcNow.AddDays(_jwtOptions.RefreshTokenExpirationDays);
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.Login),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var accessToken = GenerateAccessToken(claims, accessExpires);
+        var refreshToken = GenerateRefreshToken();
+
+        var accessEntity = new JwtToken
+        {
+            Id = Guid.NewGuid(),
+            Token = accessToken,
+            Type = TokenType.Access,
+            ExpirationDate = accessExpires
+        };
+
+        var refreshEntity = new JwtToken
+        {
+            Id = Guid.NewGuid(),
+            Token = refreshToken,
+            Type = TokenType.Refresh,
+            ParentTokenId = accessEntity.Id,
+            ExpirationDate = refreshExpires
+        };
+
+        _dataContext.Tokens.AddRange(accessEntity, refreshEntity);
+        _dataContext.TokenJournals.AddRange(
+            new TokenJournal
+            {
+                Id = Guid.NewGuid(),
+                TokenId = accessEntity.Id,
+                UserId = user.Id,
+                ActivatedAt = DateTime.UtcNow
+            },
+            new TokenJournal
+            {
+                Id = Guid.NewGuid(),
+                TokenId = refreshEntity.Id,
+                UserId = user.Id,
+                ActivatedAt = DateTime.UtcNow
+            }
+        );
+        await _dataContext.SaveChangesAsync();
+
+        return new TokenPair(accessToken, refreshToken);
+
     }
 
-    public string GeenerateRefreshToken()
+    public async Task<TokenPair?> RefreshSessionAsync(string refreshToken)
     {
-        var randomNumber = new byte[32];
-        using var rng = RandomNumberGenerator.Create();
-        rng.GetBytes(randomNumber);
-        return Convert.ToBase64String(randomNumber);
+        var journal = await _dataContext.TokenJournals
+            .Include(tj => tj.Token)
+            .Include(tj => tj.User)
+            .FirstOrDefaultAsync(tj =>
+                tj.Token!.Token == refreshToken &&
+                tj.Token.Type == TokenType.Refresh);
+
+        if (journal == null || journal.DeactivatedAt != null || journal.Token!.ExpirationDate <= DateTime.UtcNow) return null;
+
+        if (journal.User == null || journal.User.DeletedAt != null) return null;
+
+        journal.DeactivatedAt = DateTime.UtcNow;
+
+        if (journal.Token.ParentTokenId.HasValue)
+        {
+            var oldAccess = await _dataContext.TokenJournals
+                .FirstOrDefaultAsync(tj => tj.TokenId == journal.Token.ParentTokenId.Value && tj.DeactivatedAt == null);
+
+            if (oldAccess != null)
+                oldAccess.DeactivatedAt = DateTime.UtcNow;
+        }
+
+        return await CreateSessionAsync(journal.User);
     }
 
-    public string GenerateAccessToken(IEnumerable<Claim> claims)
+    public async Task DeactivateSessionAsync(string accessToken)
     {
-        var jwtSettings = _configuration.GetSection("Jwt");
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
+        var accessJournal = await _dataContext.TokenJournals
+            .Include(tj => tj.Token)
+            .FirstOrDefaultAsync(tj => tj.Token!.Token == accessToken && tj.DeactivatedAt == null);
+
+        if (accessJournal == null) return;
+
+        accessJournal.DeactivatedAt = DateTime.UtcNow;
+
+        var refreshJournal = await _dataContext.TokenJournals
+            .Include(tj => tj.Token)
+            .FirstOrDefaultAsync(tj => tj.Token!.ParentTokenId == accessJournal.TokenId && tj.DeactivatedAt == null);
+        if (refreshJournal != null) refreshJournal.DeactivatedAt = DateTime.UtcNow;
+
+        await _dataContext.SaveChangesAsync();
+
+    }
+
+    private string GenerateRefreshToken() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+
+    private string GenerateAccessToken(IEnumerable<Claim> claims, DateTime expires)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Key));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"],
-            audience: jwtSettings["Audience"],
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["AccessTokenExpirationMinutes"]!)),
+            expires: expires,
             signingCredentials: creds
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
-    {
-        var jwtSettings = _configuration.GetSection("Jwt");
-        var tokenValidationParameters = new TokenValidationParameters
-        {
-            // Валідація назви сервіса який створив токен
-            ValidateIssuer = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            // Валідація отримувача токена
-            ValidateAudience = true,
-            ValidAudience = jwtSettings["Audience"],
-            // Валідація життя токену
-            ValidateLifetime = false,
-            // Додавання ключа для підпису + його валідація
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!)),
-            ValidateIssuerSigningKey = true,
-        };
-        var tokenHandler = new JwtSecurityTokenHandler();
-        try
-        {
-            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
-            if(securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-            {
-                return null;
-            }
-            return principal;
-        }
-        catch
-        {
-            return null;
-        }
     }
 }

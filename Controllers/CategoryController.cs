@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using p48_lessons_asp.Data;
 using p48_lessons_asp.Data.Entity;
 using p48_lessons_asp.DTO.Category;
+using p48_lessons_asp.Extensions;
 using p48_lessons_asp.Models.CategoryRequestModels;
-using p48_lessons_asp.Services.FluentValidation;
 using p48_lessons_asp.Services.Slug;
 
 namespace p48_lessons_asp.Controllers

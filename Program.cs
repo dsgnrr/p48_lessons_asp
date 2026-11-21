@@ -16,6 +16,11 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using p48_lessons_asp.Services.Token;
+using Microsoft.IdentityModel.JsonWebTokens;
+using System.IdentityModel.Tokens.Jwt;
+using p48_lessons_asp.Options;
+using p48_lessons_asp.Data.Enum;
+using System.Security.Claims;
 
 namespace p48_lessons_asp
 {
@@ -41,6 +46,8 @@ namespace p48_lessons_asp
 
                 // підключення логера замість стандартного
                 builder.Host.UseSerilog();
+
+                #region OUR_SERVICES
                 builder.Services.AddSingleton<IRandomService, RandomService>();
                 builder.Services.AddSingleton<ISlugHelper, SlugHelper>();
                 builder.Services.AddSingleton<ISlugService, SlugService>();
@@ -49,9 +56,15 @@ namespace p48_lessons_asp
                 builder.Services.AddSingleton<IHashService, Md5HashService>();
                 builder.Services.AddSingleton<IKdfService, HashKdfService>();
 
+                builder.Services.AddOptions<JwtOptions>()
+                .BindConfiguration(JwtOptions.SectionName)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+                #endregion
                 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
                 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
                 // builder.Services.AddSingleton<IGenerator<Product>, ProductGenerator>();
                 // Додаємо сервіс, який буде перенаправляти запити на контролери
                 builder.Services.AddControllers();
@@ -91,15 +104,17 @@ namespace p48_lessons_asp
                         options => options.UseSqlServer(connectionString)
                     );
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Log.Fatal(ex, "App permanently stopped. Please check database existing or edit app configuration file");
                     throw new Exception("Getting error while trying to connect to database");
                 }
 
 
                 #region JWT_CONFIGURATION
-                var jwtSettings = builder.Configuration.GetSection("Jwt");
-                var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
+                var jwtOptions = builder.Configuration
+                .GetSection(JwtOptions.SectionName)
+                .Get<JwtOptions>() ?? new JwtOptions();
 
                 builder.Services.AddAuthentication(options =>
                 {
@@ -112,24 +127,73 @@ namespace p48_lessons_asp
                     {
                         // Валідація назви сервіса який створив токен
                         ValidateIssuer = true,
-                        ValidIssuer = jwtSettings["Issuer"],
+                        ValidIssuer = jwtOptions.Issuer,
                         // Валідація отримувача токена
-                        ValidateAudience= true,
-                        ValidAudience = jwtSettings["Audience"],
+                        ValidateAudience = true,
+                        ValidAudience = jwtOptions.Audience,
                         // Валідація життя токену
                         ValidateLifetime = true,
 
                         // Додавання ключа для підпису + його валідація
-                        IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+                        IssuerSigningKey = 
+                            new SymmetricSecurityKey(Encoding
+                                .UTF8
+                                .GetBytes(jwtOptions.Key)),
                         ValidateIssuerSigningKey = true,
                         // Виключаємо додаткові 5 хвилин після прострочення токену
                         ClockSkew = TimeSpan.Zero
+                    };
+
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnTokenValidated = async context =>
+                        {
+                            var rawToken = (context.SecurityToken as JsonWebToken)?.EncodedToken
+                                ?? (context.SecurityToken as JwtSecurityToken)?.RawData;
+
+                            if (string.IsNullOrEmpty(rawToken))
+                            {
+                                context.Fail("Token is missing");
+                                return;
+                            }
+
+                            var db = context.HttpContext.RequestServices.GetRequiredService<DataContext>();
+
+                            var journal = await db.TokenJournals
+                                .Include(tj=>tj.Token)
+                                .Include(tj=>tj.User)
+                                .AsNoTracking()
+                                .FirstOrDefaultAsync(tj=>
+                                    tj.Token!.Token == rawToken &&
+                                    tj.Token.Type == TokenType.Access &&
+                                    tj.DeactivatedAt == null);
+                            if(journal?.User == null || journal.User.DeletedAt != null)
+                            {
+                                context.Fail("Token rejected or user deleted");
+                                return;
+                            }
+
+                            var identity = context.Principal?.Identity as ClaimsIdentity;
+                            identity?.AddClaim(new Claim(ClaimTypes.Role, journal.User.Role.ToString()));
+                        },
+                        OnChallenge = async context =>
+                        {
+                            context.HandleResponse();
+                            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                            context.Response.ContentType = "application/json";
+
+                            await context.Response.WriteAsJsonAsync(new
+                            {
+                                StatusCode = 401,
+                                Message=context.AuthenticateFailure?.Message ?? "Required valid Bearer token"
+                            });
+                        }
                     };
                 });
 
                 builder.Services.AddAuthorization();
 
-                builder.Services.AddSingleton<ITokenService, JwtTokenService>();
+                builder.Services.AddScoped<ITokenService, JwtTokenService>();
                 #endregion
 
 
@@ -147,6 +211,8 @@ namespace p48_lessons_asp
                 }
 
                 app.UseStaticFiles();
+
+                app.UseAuthentication();
                 app.UseAuthorization();
 
                 // Зв'язує класи контролери з маршрутами

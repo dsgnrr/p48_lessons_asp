@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using p48_lessons_asp.Data;
 using p48_lessons_asp.Data.Entity;
 using p48_lessons_asp.DTO.Product;
+using p48_lessons_asp.Extensions;
 using p48_lessons_asp.Models;
 using p48_lessons_asp.Models.ProductRequestModels;
-using p48_lessons_asp.Services.FluentValidation;
 using p48_lessons_asp.Services.Slug;
 using p48_lessons_asp.Services.StorageService;
 
@@ -67,7 +67,7 @@ namespace p48_lessons_asp.Controllers
             {
                 // TODO: Logger
                 Console.ForegroundColor = ConsoleColor.DarkRed;
-                System.Console.WriteLine($"[CRITICAL] Cannot create new product with reason: {ex.Message} | ${DateTime.Now} | ProductsController/CreateProduct");
+                System.Console.WriteLine($"[ERROR] Cannot create new product with reason: {ex.Message} | ${DateTime.Now} | ProductsController/CreateProduct");
                 Console.ResetColor();
                 
 

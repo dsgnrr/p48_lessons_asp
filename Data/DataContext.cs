@@ -31,5 +31,8 @@ public class DataContext : DbContext
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Login)
             .IsUnique();
+        modelBuilder.Entity<JwtToken>()
+            .HasIndex(t=>t.Token)
+            .IsUnique();
     }
 }
