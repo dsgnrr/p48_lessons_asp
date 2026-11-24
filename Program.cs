@@ -22,6 +22,7 @@ using p48_lessons_asp.Options;
 using p48_lessons_asp.Data.Enum;
 using System.Security.Claims;
 using Microsoft.OpenApi;
+using DotNetEnv;
 
 
 namespace p48_lessons_asp
@@ -31,6 +32,7 @@ namespace p48_lessons_asp
 
         public static void Main(string[] args)
         {
+            Env.Load();
             var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json")

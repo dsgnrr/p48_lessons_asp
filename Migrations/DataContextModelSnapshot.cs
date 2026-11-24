@@ -191,8 +191,23 @@ namespace p48_lessons_asp.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Email")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("EmailCodeAttempts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EmailVerificationCode")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EmailVerificationCodeExpires")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("FirstName")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsEmailConfirmed")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("LaststName")
                         .HasColumnType("TEXT");
@@ -213,6 +228,9 @@ namespace p48_lessons_asp.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.HasIndex("Login")
                         .IsUnique();
