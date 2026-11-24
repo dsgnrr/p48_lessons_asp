@@ -7,6 +7,7 @@ using p48_lessons_asp.Data;
 using p48_lessons_asp.DTO.User;
 using p48_lessons_asp.Extensions;
 using p48_lessons_asp.Models.UserRequestModels;
+using p48_lessons_asp.Services.Email;
 using p48_lessons_asp.Services.Kdf;
 using p48_lessons_asp.Services.Random;
 
@@ -22,7 +23,14 @@ namespace p48_lessons_asp.Controllers
         private readonly IRandomService _randomService;
         private readonly ILogger<UserController> _logger;
         private readonly IMapper _mapper;
-        public UserController(DataContext db, IValidator<CreateUserRequest> userValidator, IRandomService randomService, IKdfService kdfService, ILogger<UserController> logger, IMapper mapper)
+        private readonly IEmailService _emailService;
+        public UserController(DataContext db, 
+            IValidator<CreateUserRequest> userValidator, 
+            IRandomService randomService, 
+            IKdfService kdfService, 
+            ILogger<UserController> logger, 
+            IMapper mapper, 
+            IEmailService emailService)
         {
             _db = db;
             _userValidator = userValidator;
@@ -30,7 +38,9 @@ namespace p48_lessons_asp.Controllers
             _kdfService = kdfService;
             _logger = logger;
             _mapper = mapper;
+            _emailService = emailService;
         }
+
         [Authorize]
         [HttpGet]
         [Route("profile")]
@@ -57,8 +67,13 @@ namespace p48_lessons_asp.Controllers
             {
                 Login = model.Login,
                 PasswordHash = _kdfService.GetDerivedKey(model.Password, salt),
-                PasswordSalt = salt
+                PasswordSalt = salt,
+                Email = model.Email,
+                EmailVerificationCode = _randomService.ConfirmCode(6),
+                EmailVerificationCodeExpires = DateTime.UtcNow.AddMinutes(10)
             };
+
+            var sendResult = await _emailService.SendEmailAsync(model.Email, "Welcome to our API", $"Your verification code: {newUser.EmailVerificationCode}");
 
             try
             {

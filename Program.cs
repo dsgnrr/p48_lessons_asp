@@ -1,10 +1,8 @@
 using System.Globalization;
 using System.Reflection;
 using FluentValidation;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using p48_lessons_asp.Data;
-using p48_lessons_asp.Models;
 using p48_lessons_asp.Services.Random;
 using p48_lessons_asp.Services.Slug;
 using Slugify;
@@ -23,6 +21,7 @@ using p48_lessons_asp.Data.Enum;
 using System.Security.Claims;
 using Microsoft.OpenApi;
 using DotNetEnv;
+using p48_lessons_asp.Services.Email;
 
 
 namespace p48_lessons_asp
@@ -51,6 +50,14 @@ namespace p48_lessons_asp
                 // підключення логера замість стандартного
                 builder.Host.UseSerilog();
 
+                builder.Services.AddOptions<JwtOptions>()
+                .BindConfiguration(JwtOptions.SectionName)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+                builder.Services.AddOptions<GmailOptions>()
+                .BindConfiguration(GmailOptions.SectionName);
+
                 #region OUR_SERVICES
                 builder.Services.AddSingleton<IRandomService, RandomService>();
                 builder.Services.AddSingleton<ISlugHelper, SlugHelper>();
@@ -60,10 +67,8 @@ namespace p48_lessons_asp
                 builder.Services.AddSingleton<IHashService, Md5HashService>();
                 builder.Services.AddSingleton<IKdfService, HashKdfService>();
 
-                builder.Services.AddOptions<JwtOptions>()
-                .BindConfiguration(JwtOptions.SectionName)
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
+                builder.Services.AddScoped<IEmailService, GmailService>();
+
                 #endregion
                 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
