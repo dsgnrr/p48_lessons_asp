@@ -59,6 +59,8 @@ namespace p48_lessons_asp
                 .BindConfiguration(GmailOptions.SectionName);
 
                 #region OUR_SERVICES
+                builder.Services.AddMediatR(cfg => 
+                    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
                 builder.Services.AddSingleton<IRandomService, RandomService>();
                 builder.Services.AddSingleton<ISlugHelper, SlugHelper>();
                 builder.Services.AddSingleton<ISlugService, SlugService>();

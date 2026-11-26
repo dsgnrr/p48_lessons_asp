@@ -1,15 +1,17 @@
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using p48_lessons_asp.CQRS.Commands.Category;
+using p48_lessons_asp.CQRS.Queries.CategoryRequests;
 using p48_lessons_asp.Data;
 using p48_lessons_asp.Data.Entity;
 using p48_lessons_asp.DTO.Category;
 using p48_lessons_asp.Extensions;
-using p48_lessons_asp.Models.CategoryRequestModels;
 using p48_lessons_asp.Services.Slug;
 
 namespace p48_lessons_asp.Controllers
@@ -18,23 +20,29 @@ namespace p48_lessons_asp.Controllers
     [ApiController]
     public class CategoryController : ControllerBase
     {
+        private readonly IMediator _mediator;
         private readonly ILogger<CategoryController> _logger;
         private readonly ISlugService _slugService;
         private readonly DataContext _dataContext;
         private readonly IMapper _mapper;
-        IValidator<CreateCategoryModel> _createCategoryValidator;
+        IValidator<CreateCategoryRequest> _createCategoryValidator;
+        IValidator<GetCategoryByIdRequest> _getCategoryByIdValidator;
         public CategoryController(
             IMapper mapper,
             ISlugService slugService,
             DataContext dataContext,
-            IValidator<CreateCategoryModel> createCategoryValidator,
-            ILogger<CategoryController> logger)
+            IValidator<CreateCategoryRequest> createCategoryValidator,
+            ILogger<CategoryController> logger,
+            IValidator<GetCategoryByIdRequest> getCategoryByIdValidator,
+            IMediator mediator)
         {
             _slugService = slugService;
             _dataContext = dataContext;
             _createCategoryValidator = createCategoryValidator;
             _mapper = mapper;
             _logger = logger;
+            _getCategoryByIdValidator = getCategoryByIdValidator;
+            _mediator = mediator;
         }
 
         [HttpGet]
@@ -56,7 +64,7 @@ namespace p48_lessons_asp.Controllers
                 .Categories
                 .Where(c => c.DeletedAt == null)
                 // підванатажуємо продукти, самостійно пов'язані сутності EF не підтягує
-                .Include(c=>c.Products)
+                .Include(c => c.Products)
                 .ProjectTo<CategoryDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
@@ -81,7 +89,7 @@ namespace p48_lessons_asp.Controllers
             }
             catch (OperationCanceledException ex)
             {
-                _logger.LogError(ex,"Database error");
+                _logger.LogError(ex, "Database error");
                 return new ObjectResult(new
                 {
                     StatusCode = 503,
@@ -92,11 +100,42 @@ namespace p48_lessons_asp.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryModel model)
-        {
 
-            var validations = await _createCategoryValidator.GetErrorsAsync(model);
+        [HttpGet]
+        [Route("one")]
+        public async Task<IActionResult> GetCategory([FromQuery] GetCategoryByIdRequest request, CancellationToken cancellationToken)
+        {
+            var validationResult = _getCategoryByIdValidator.GetErrors(request);
+            if (validationResult != null)
+            {
+                return new ObjectResult(new
+                {
+                    StatusCode = 400,
+                    Message = "Bad Request",
+                    Errors = validationResult
+                })
+                { StatusCode = 400 };
+            }
+            var category = await _mediator.Send(request, cancellationToken);
+            if (category == null) return new ObjectResult(new
+            {
+                StatusCode = 404,
+                Message = "Not Found",
+            })
+            { StatusCode = 404 };
+
+            return new ObjectResult(new
+            {
+                StatusCode = 200,
+                Message = "Ok",
+                Data = category
+            })
+            { StatusCode = 200 };
+        }
+        [HttpPost]
+        public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryRequest request)
+        {
+            var validations = await _createCategoryValidator.GetErrorsAsync(request);
 
             if (validations != null)
             {
@@ -104,37 +143,18 @@ namespace p48_lessons_asp.Controllers
                 return new ObjectResult(validations) { StatusCode = 400 };
             }
 
-            Category category = new()
+            var newCategory = await _mediator.Send(request);
+            if(newCategory==null) return new ObjectResult(new
             {
-                Title = model.Title,
-                Slug = _slugService.GetSlug(model.Title),
-                Description = model.Description
-            };
-            if (Guid.TryParse(model.ParentCategoryId, out var parsed)) category.ParentCategoryId = parsed;
-            try
+                StatusCode = 503,
+                Message="Database service unavaliable",
+            }){StatusCode = 503};
+            return new ObjectResult(new
             {
-                await _dataContext.Categories.AddAsync(category);
-                await _dataContext.SaveChangesAsync();
-                _logger.LogInformation("Succesfully create new category: {id}", category.Id);
-                return new ObjectResult(new
-                {
-                    StatusCdoe = 201,
-                    Message = "Created",
-                    Data = category
-                });
-            }
-            catch (OperationCanceledException ex)
-            {
-                // System.Console.WriteLine($"Created category error: {ex.Message}");
-                _logger.LogWarning("Failed create new category by reason: {reason}", ex.Message);
-                return new ObjectResult(new
-                {
-                    StatusCode = 500,
-                    Message = "See server logs",
-                    Data = (object)null!
-                })
-                { StatusCode = 500 };
-            }
+                StatusCode = 201,
+                Message = "Ok",
+                Data = newCategory
+            }){StatusCode = 201};
         }
     }
 }
